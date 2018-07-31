@@ -54,6 +54,11 @@ function PositionComponent(x, y) {
   this.y = y
 }
 
+function VelocityComponent(vx, vy) {
+  this.vx = vx
+  this.vy = vy
+}
+
 const LogSystem = ents => ents
   .filter(hasComponent(LogComponent))
   .forEach(x => {
@@ -80,6 +85,13 @@ const RenderSystem = (canvas, w, h) => {
     }
 }
 
+const MovementSystem = ents => ents
+  .filter(hasComponents([PositionComponent, VelocityComponent]))
+  .forEach(ent => {
+    ent.components.PositionComponent.x += ent.components.VelocityComponent.vx
+    ent.components.PositionComponent.y += ent.components.VelocityComponent.vy
+  })
+
 window.addEventListener('load', () => {
 
   const world = createWorld()
@@ -94,14 +106,17 @@ window.addEventListener('load', () => {
   world.createEntity()
     .addComponent(new PositionComponent(10, 10))
     .addComponent(new SpriteComponent(32, '#ff00ff'))
+    .addComponent(new VelocityComponent(1, 2))
 
   world.createEntity()
     .addComponent(new PositionComponent(250, 250))
     .addComponent(new SpriteComponent(32, '#00ffff'))
+    .addComponent(new VelocityComponent(-0.5, -3))
 
   const canvas = document.getElementById('cvs')
   world.addSystem(RenderSystem(canvas, 400, 300))
   world.addSystem(LogSystem)
+  world.addSystem(MovementSystem)
 
   const gameLoop = () => {
     world.update()
