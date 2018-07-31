@@ -1,29 +1,38 @@
-const entities = []
-const systems = []
-let _entn = 0
+const createWorld = () => {
+  const entities = []
+  const systems = []
+  let _entn = 0
 
-const addComponent = (ent, comp) => {
-  ent.components[comp.constructor.name] = comp
-  return ent
+  const addComponent = (ent, comp) => {
+    ent.components[comp.constructor.name] = comp
+    return ent
+  }
+
+  const createEntity = () => {
+    const newEnt = {
+      id: ++_entn,
+      components: {}
+    }
+    newEnt.addComponent = c => addComponent(newEnt, c)
+    entities.push(newEnt)
+    return newEnt
+  }
+
+  const addSystem = fn => systems.push(fn)
+
+  const update = () => {
+    systems.forEach(fn => fn(entities))
+  }
+
+  return {
+    createEntity,
+    addComponent,
+    addSystem,
+    update
+  }
 }
 
 const hasComponent = cname => ent => !!ent.components[cname.name || cname]
-
-const createEntity = () => {
-  const newEnt = {
-    id: ++_entn,
-    components: {}
-  }
-  newEnt.addComponent = c => addComponent(newEnt, c)
-  entities.push(newEnt)
-  return newEnt
-}
-
-const addSystem = fn => systems.push(fn)
-
-const updateWorld = () => {
-  systems.forEach(fn => fn(entities))
-}
 
 function LogComponent(msg) {
   this.message = msg
@@ -43,17 +52,19 @@ const LogSystem = ents => ents
 
 window.addEventListener('load', () => {
 
-  createEntity()
+  const world = createWorld()
+
+  world.createEntity()
     .addComponent(new LogComponent('Hello'))
 
-  createEntity()
+  world.createEntity()
     .addComponent(new LogComponent('world!'))
     .addComponent(new WarnComponent)
 
-  addSystem(LogSystem)
+  world.addSystem(LogSystem)
 
   const gameLoop = () => {
-    updateWorld()
+    world.update()
     requestAnimationFrame(gameLoop)
   }
 
