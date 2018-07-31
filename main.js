@@ -29,16 +29,26 @@ function LogComponent(msg) {
   this.message = msg
 }
 
+function WarnComponent() {}
+
 const LogSystem = ents => ents
   .filter(hasComponent(LogComponent))
   .forEach(x => {
-    console.log(x.components.LogComponent.message)
+    if (hasComponent(WarnComponent)(x))
+      console.warn(x.components.LogComponent.message)
+    else
+      console.log(x.components.LogComponent.message);
+    delete x.components.LogComponent
   })
 
 window.addEventListener('load', () => {
 
   createEntity()
-    .addComponent(new LogComponent('hello world'))
+    .addComponent(new LogComponent('Hello'))
+
+  createEntity()
+    .addComponent(new LogComponent('world!'))
+    .addComponent(new WarnComponent)
 
   addSystem(LogSystem)
 
