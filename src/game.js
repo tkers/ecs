@@ -54,7 +54,7 @@ const MovementSystem = ents => ents
     ent.components.PositionComponent.y += ent.components.VelocityComponent.vy
   })
 
-window.addEventListener('load', () => {
+export const createGame = (canvas) => {
 
   const world = createWorld()
 
@@ -75,15 +75,9 @@ window.addEventListener('load', () => {
     .addComponent(new SpriteComponent(32, '#00ffff'))
     .addComponent(new VelocityComponent(-0.5, -3))
 
-  const canvas = document.getElementById('cvs')
   world.addSystem(RenderSystem(canvas, 400, 300))
   world.addSystem(LogSystem)
   world.addSystem(MovementSystem)
 
-  const gameLoop = () => {
-    world.update()
-    requestAnimationFrame(gameLoop)
-  }
-
-  gameLoop()
-})
+  return world
+}

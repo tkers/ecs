@@ -1,1 +1,1 @@
-import './game.js'
+export { createGame } from './game.js'
