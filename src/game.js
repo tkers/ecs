@@ -1,3 +1,5 @@
+import { createWorld, hasComponent, hasComponents } from './ecs'
+
 function LogComponent(msg) {
   this.message = msg
 }

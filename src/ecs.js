@@ -1,4 +1,4 @@
-const createWorld = () => {
+export const createWorld = () => {
   const entities = []
   const systems = []
   let _entn = 0
@@ -32,5 +32,5 @@ const createWorld = () => {
   }
 }
 
-const hasComponent = cname => ent => !!ent.components[cname.name || cname]
-const hasComponents = cnames => ent => cnames.every(cname => !!ent.components[cname.name || cname])
+export const hasComponent = cname => ent => !!ent.components[cname.name || cname]
+export const hasComponents = cnames => ent => cnames.every(cname => !!ent.components[cname.name || cname])

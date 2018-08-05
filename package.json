@@ -1,0 +1,15 @@
+{
+  "name": "ecs",
+  "version": "0.0.1",
+  "description": "Entity-Component-System demo",
+  "main": "index.js",
+  "repository": "git@github.com:tkers/ecs.git",
+  "author": "Tijn Kersjes <tijn@divbyzero.nl>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup src/index.js --format umd --name ECS --file dist/ecs.js"
+  },
+  "devDependencies": {
+    "rollup": "^0.63.5"
+  }
+}
