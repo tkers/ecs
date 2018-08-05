@@ -1,25 +1,5 @@
 import { createWorld, hasComponent, hasComponents } from './ecs'
-
-function LogComponent(msg) {
-  this.message = msg
-}
-
-function WarnComponent() {}
-
-function SpriteComponent(size, color) {
-  this.size = size
-  this.color = color
-}
-
-function PositionComponent(x, y) {
-  this.x = x
-  this.y = y
-}
-
-function VelocityComponent(vx, vy) {
-  this.vx = vx
-  this.vy = vy
-}
+import { LogComponent, WarnComponent, SpriteComponent, PositionComponent, VelocityComponent } from './components'
 
 const LogSystem = ents => ents
   .filter(hasComponent(LogComponent))
