@@ -1,6 +1,6 @@
 import { createWorld } from './ecs'
-import { SpriteComponent, PositionComponent, VelocityComponent } from './components'
-import { RenderSystem, MovementSystem } from './systems'
+import { SpriteComponent, PositionComponent, VelocityComponent, TargetComponent } from './components'
+import { RenderSystem, MovementSystem, TargetingSystem } from './systems'
 
 export const createGame = (canvas) => {
 
@@ -16,8 +16,15 @@ export const createGame = (canvas) => {
     .addComponent(new SpriteComponent(32, '#00ffff'))
     .addComponent(new VelocityComponent(-0.5, -3))
 
+  world.createEntity()
+    .addComponent(new PositionComponent(280, 30))
+    .addComponent(new SpriteComponent(16, '#00aaaa'))
+    .addComponent(new VelocityComponent(0, 0))
+    .addComponent(new TargetComponent(150, 150, 1))
+
   world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300))
   world.addSystem([PositionComponent, VelocityComponent], MovementSystem)
+  world.addSystem([TargetComponent, PositionComponent, VelocityComponent], TargetingSystem)
 
   return world
 }

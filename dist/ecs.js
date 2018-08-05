@@ -83,6 +83,12 @@
     this.vy = vy;
   }
 
+  function TargetComponent(tx, ty, velocity) {
+    this.x = tx;
+    this.y = ty;
+    this.v = velocity;
+  }
+
   const RenderSystem = (canvas, w, h) => {
     const ctx = canvas.getContext('2d');
     canvas.width = w;
@@ -104,6 +110,24 @@
       ent.components.PositionComponent.y += ent.components.VelocityComponent.vy;
     });
 
+  const TargetingSystem = ents => ents
+    .forEach(ent => {
+      const xi = ent.components.PositionComponent.x;
+      const yi = ent.components.PositionComponent.y;
+      const xt = ent.components.TargetComponent.x;
+      const yt = ent.components.TargetComponent.y;
+      const dx = xt - xi;
+      const dy = yt - yi;
+      const angle = Math.atan2(dy, dx);
+      ent.components.VelocityComponent.vx = Math.cos(angle) * ent.components.TargetComponent.v;
+      ent.components.VelocityComponent.vy = Math.sin(angle) * ent.components.TargetComponent.v;
+      if (Math.sqrt(dx ** 2 + dy ** 2) < ent.components.TargetComponent.v) {
+        ent.components.VelocityComponent.vx = 0;
+        ent.components.VelocityComponent.vy = 0;
+        ent.removeComponent(TargetComponent);
+      }
+    });
+
   const createGame = (canvas) => {
 
     const world = createWorld();
@@ -118,8 +142,15 @@
       .addComponent(new SpriteComponent(32, '#00ffff'))
       .addComponent(new VelocityComponent(-0.5, -3));
 
+    world.createEntity()
+      .addComponent(new PositionComponent(280, 30))
+      .addComponent(new SpriteComponent(16, '#00aaaa'))
+      .addComponent(new VelocityComponent(0, 0))
+      .addComponent(new TargetComponent(150, 150, 1));
+
     world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
     world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
+    world.addSystem([TargetComponent, PositionComponent, VelocityComponent], TargetingSystem);
 
     return world
   };
