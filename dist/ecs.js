@@ -1,8 +1,12 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (factory());
-}(this, (function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (factory((global.ECS = {})));
+}(this, (function (exports) { 'use strict';
+
+  const asArray = x => x ? (x instanceof Array ? x : [x]) : [];
+  const hasComponents = cnames => ent => cnames.every(cname => !!ent.components[cname.name || cname]);
+  const hasComponent = cname => hasComponents(asArray(cname));
 
   const createWorld = () => {
     const entities = [];
@@ -11,7 +15,26 @@
 
     const addComponent = (ent, comp) => {
       ent.components[comp.constructor.name] = comp;
+      systems
+        .filter(sys => !sys.entities.includes(ent))
+        .filter(sys => hasComponents(sys.filter)(ent))
+        .forEach(sys => sys.entities.push(ent));
       return ent
+    };
+
+    const removeComponent = (ent, comp) => {
+      delete ent.components[comp.name];
+      systems
+        .filter(sys => sys.entities.includes(ent))
+        .filter(sys => !hasComponents(sys.filter)(ent))
+        .forEach(sys => sys.entities = sys.entities.filter(e => e !== ent));
+    };
+
+    const addEntity = ent => {
+      systems
+        .filter(sys => hasComponents(sys.filter)(ent))
+        .forEach(sys => sys.entities.push(ent));
+      entities.push(ent);
     };
 
     const createEntity = () => {
@@ -20,26 +43,30 @@
         components: {}
       };
       newEnt.addComponent = c => addComponent(newEnt, c);
-      entities.push(newEnt);
+      newEnt.removeComponent = c => removeComponent(newEnt, c);
+      addEntity(newEnt);
       return newEnt
     };
 
-    const addSystem = fn => systems.push(fn);
+    const addSystem = (filter, fn) => {
+      const newSys = {
+        filter: asArray(filter),
+        entities: entities.filter(hasComponent(filter)),
+        fn
+      };
+      systems.push(newSys);
+    };
 
     const update = () => {
-      systems.forEach(fn => fn(entities));
+      systems.forEach(sys => sys.fn(sys.entities));
     };
 
     return {
       createEntity,
-      addComponent,
       addSystem,
       update
     }
   };
-
-  const hasComponent = cname => ent => !!ent.components[cname.name || cname];
-  const hasComponents = cnames => ent => cnames.every(cname => !!ent.components[cname.name || cname]);
 
   function LogComponent(msg) {
     this.message = msg;
@@ -63,13 +90,12 @@
   }
 
   const LogSystem = ents => ents
-    .filter(hasComponent(LogComponent))
     .forEach(x => {
       if (hasComponent(WarnComponent)(x))
         console.warn(x.components.LogComponent.message);
       else
         console.log(x.components.LogComponent.message);
-      delete x.components.LogComponent;
+      x.removeComponent(LogComponent);
     });
 
   const RenderSystem = (canvas, w, h) => {
@@ -80,7 +106,6 @@
     return ents => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ents
-        .filter(hasComponents([SpriteComponent, PositionComponent]))
         .forEach(ent => {
           ctx.fillStyle = ent.components.SpriteComponent.color;
           ctx.fillRect(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, ent.components.SpriteComponent.size);
@@ -89,13 +114,12 @@
   };
 
   const MovementSystem = ents => ents
-    .filter(hasComponents([PositionComponent, VelocityComponent]))
     .forEach(ent => {
       ent.components.PositionComponent.x += ent.components.VelocityComponent.vx;
       ent.components.PositionComponent.y += ent.components.VelocityComponent.vy;
     });
 
-  window.addEventListener('load', () => {
+  const createGame = (canvas) => {
 
     const world = createWorld();
 
@@ -116,17 +140,15 @@
       .addComponent(new SpriteComponent(32, '#00ffff'))
       .addComponent(new VelocityComponent(-0.5, -3));
 
-    const canvas = document.getElementById('cvs');
-    world.addSystem(RenderSystem(canvas, 400, 300));
-    world.addSystem(LogSystem);
-    world.addSystem(MovementSystem);
+    world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
+    world.addSystem(LogComponent, LogSystem);
+    world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
 
-    const gameLoop = () => {
-      world.update();
-      requestAnimationFrame(gameLoop);
-    };
+    return world
+  };
 
-    gameLoop();
-  });
+  exports.createGame = createGame;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
 
 })));

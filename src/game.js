@@ -2,13 +2,12 @@ import { createWorld, hasComponent, hasComponents } from './ecs'
 import { LogComponent, WarnComponent, SpriteComponent, PositionComponent, VelocityComponent } from './components'
 
 const LogSystem = ents => ents
-  .filter(hasComponent(LogComponent))
   .forEach(x => {
     if (hasComponent(WarnComponent)(x))
       console.warn(x.components.LogComponent.message)
     else
       console.log(x.components.LogComponent.message);
-    delete x.components.LogComponent
+    x.removeComponent(LogComponent)
   })
 
 const RenderSystem = (canvas, w, h) => {
@@ -19,7 +18,6 @@ const RenderSystem = (canvas, w, h) => {
   return ents => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ents
-      .filter(hasComponents([SpriteComponent, PositionComponent]))
       .forEach(ent => {
         ctx.fillStyle = ent.components.SpriteComponent.color
         ctx.fillRect(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, ent.components.SpriteComponent.size)
@@ -28,7 +26,6 @@ const RenderSystem = (canvas, w, h) => {
 }
 
 const MovementSystem = ents => ents
-  .filter(hasComponents([PositionComponent, VelocityComponent]))
   .forEach(ent => {
     ent.components.PositionComponent.x += ent.components.VelocityComponent.vx
     ent.components.PositionComponent.y += ent.components.VelocityComponent.vy
@@ -55,9 +52,9 @@ export const createGame = (canvas) => {
     .addComponent(new SpriteComponent(32, '#00ffff'))
     .addComponent(new VelocityComponent(-0.5, -3))
 
-  world.addSystem(RenderSystem(canvas, 400, 300))
-  world.addSystem(LogSystem)
-  world.addSystem(MovementSystem)
+  world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300))
+  world.addSystem(LogComponent, LogSystem)
+  world.addSystem([PositionComponent, VelocityComponent], MovementSystem)
 
   return world
 }
