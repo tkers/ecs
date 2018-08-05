@@ -1,9 +1,3 @@
-export function LogComponent(msg) {
-  this.message = msg
-}
-
-export function WarnComponent() {}
-
 export function SpriteComponent(size, color) {
   this.size = size
   this.color = color

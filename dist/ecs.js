@@ -68,12 +68,6 @@
     }
   };
 
-  function LogComponent(msg) {
-    this.message = msg;
-  }
-
-  function WarnComponent() {}
-
   function SpriteComponent(size, color) {
     this.size = size;
     this.color = color;
@@ -88,15 +82,6 @@
     this.vx = vx;
     this.vy = vy;
   }
-
-  const LogSystem = ents => ents
-    .forEach(x => {
-      if (hasComponent(WarnComponent)(x))
-        console.warn(x.components.LogComponent.message);
-      else
-        console.log(x.components.LogComponent.message);
-      x.removeComponent(LogComponent);
-    });
 
   const RenderSystem = (canvas, w, h) => {
     const ctx = canvas.getContext('2d');
@@ -124,13 +109,6 @@
     const world = createWorld();
 
     world.createEntity()
-      .addComponent(new LogComponent('Hello'));
-
-    world.createEntity()
-      .addComponent(new LogComponent('world!'))
-      .addComponent(new WarnComponent);
-
-    world.createEntity()
       .addComponent(new PositionComponent(10, 10))
       .addComponent(new SpriteComponent(32, '#ff00ff'))
       .addComponent(new VelocityComponent(1, 2));
@@ -141,7 +119,6 @@
       .addComponent(new VelocityComponent(-0.5, -3));
 
     world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
-    world.addSystem(LogComponent, LogSystem);
     world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
 
     return world

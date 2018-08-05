@@ -1,17 +1,10 @@
-import { createWorld, hasComponent, hasComponents } from './ecs'
-import { LogComponent, WarnComponent, SpriteComponent, PositionComponent, VelocityComponent } from './components'
-import { LogSystem, RenderSystem, MovementSystem } from './systems'
+import { createWorld } from './ecs'
+import { SpriteComponent, PositionComponent, VelocityComponent } from './components'
+import { RenderSystem, MovementSystem } from './systems'
 
 export const createGame = (canvas) => {
 
   const world = createWorld()
-
-  world.createEntity()
-    .addComponent(new LogComponent('Hello'))
-
-  world.createEntity()
-    .addComponent(new LogComponent('world!'))
-    .addComponent(new WarnComponent)
 
   world.createEntity()
     .addComponent(new PositionComponent(10, 10))
@@ -24,7 +17,6 @@ export const createGame = (canvas) => {
     .addComponent(new VelocityComponent(-0.5, -3))
 
   world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300))
-  world.addSystem(LogComponent, LogSystem)
   world.addSystem([PositionComponent, VelocityComponent], MovementSystem)
 
   return world
