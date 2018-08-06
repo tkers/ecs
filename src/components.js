@@ -18,3 +18,7 @@ export function TargetComponent(tx, ty, velocity) {
   this.y = ty
   this.v = velocity
 }
+
+export function SelectableComponent(isSelected) {
+  this.isSelected = isSelected
+}

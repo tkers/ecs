@@ -1,4 +1,5 @@
-import { TargetComponent} from './components'
+import { hasComponent } from './ecs'
+import { TargetComponent, SelectableComponent } from './components'
 
 export const RenderSystem = (canvas, w, h) => {
   const ctx = canvas.getContext('2d')
@@ -11,6 +12,10 @@ export const RenderSystem = (canvas, w, h) => {
       .forEach(ent => {
         ctx.fillStyle = ent.components.SpriteComponent.color
         ctx.fillRect(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, ent.components.SpriteComponent.size)
+        if (hasComponent(SelectableComponent)(ent) && ent.components.SelectableComponent.isSelected) {
+          ctx.fillStyle = '#000000'
+          ctx.strokeRect(ent.components.PositionComponent.x - 5, ent.components.PositionComponent.y - 5, ent.components.SpriteComponent.size + 10, ent.components.SpriteComponent.size + 10)
+        }
       })
     }
 }
@@ -38,3 +43,32 @@ export const TargetingSystem = ents => ents
       ent.removeComponent(TargetComponent)
     }
   })
+
+export const MouseSelectionSystem = (canvas) => {
+  let clickX = 0
+  let clickY = 0
+  let triggered = false
+  canvas.addEventListener('mousedown', (e) => {
+    clickX = e.pageX - e.target.offsetLeft
+    clickY = e.pageY - e.target.offsetTop
+    triggered = true
+  })
+
+  return ents => {
+    if (!triggered)
+      return
+    triggered = false
+    ents.forEach(ent => {
+      ent.components.SelectableComponent.isSelected = false
+      if (
+        clickX >= ent.components.PositionComponent.x &&
+        clickY >= ent.components.PositionComponent.y &&
+        clickX <= ent.components.PositionComponent.x + ent.components.SpriteComponent.size &&
+        clickY <= ent.components.PositionComponent.y + ent.components.SpriteComponent.size
+      ) {
+        ent.components.SelectableComponent.isSelected = true
+        return
+      }
+    })
+  }
+}
