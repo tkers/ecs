@@ -47,28 +47,41 @@ export const TargetingSystem = ents => ents
 export const MouseSelectionSystem = (canvas) => {
   let clickX = 0
   let clickY = 0
-  let triggered = false
+  let mode = 0
   canvas.addEventListener('mousedown', (e) => {
     clickX = e.pageX - e.target.offsetLeft
     clickY = e.pageY - e.target.offsetTop
-    triggered = true
+    mode = 1
+  })
+
+  canvas.addEventListener('mouseup', (e) => {
+    clickX = e.pageX - e.target.offsetLeft
+    clickY = e.pageY - e.target.offsetTop
+    mode = 2
   })
 
   return ents => {
-    if (!triggered)
+    if (!mode)
       return
-    triggered = false
-    ents.forEach(ent => {
-      ent.components.SelectableComponent.isSelected = false
-      if (
+
+    if (mode === 1) {
+      const clickedEnt = ents.find(ent => (
         clickX >= ent.components.PositionComponent.x &&
         clickY >= ent.components.PositionComponent.y &&
         clickX <= ent.components.PositionComponent.x + ent.components.SpriteComponent.size &&
         clickY <= ent.components.PositionComponent.y + ent.components.SpriteComponent.size
-      ) {
-        ent.components.SelectableComponent.isSelected = true
-        return
-      }
-    })
+      ))
+
+      if (clickedEnt)
+        clickedEnt.components.SelectableComponent.isSelected = true
+    }
+
+    if (mode === 2) {
+      ents.forEach(ent => {
+        ent.components.SelectableComponent.isSelected = false
+      })
+    }
+
+    mode = 0
   }
 }
