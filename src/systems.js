@@ -85,3 +85,26 @@ export const MouseSelectionSystem = (canvas) => {
     mode = 0
   }
 }
+
+export const MouseTargetSystem = (canvas) => {
+  let mouseX = 0
+  let mouseY = 0
+  let triggered = false
+  canvas.addEventListener('mousemove', (e) => {
+    mouseX = e.pageX - e.target.offsetLeft
+    mouseY = e.pageY - e.target.offsetTop
+    triggered = true
+  })
+
+  return ents => {
+    if (!triggered)
+      return
+    triggered = false
+
+    ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+      const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
+      ent.components.TargetComponent.x = mouseX - offset
+      ent.components.TargetComponent.y = mouseY - offset
+    })
+  }
+};

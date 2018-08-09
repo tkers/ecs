@@ -1,6 +1,6 @@
 import { createWorld } from './ecs'
 import { SpriteComponent, PositionComponent, VelocityComponent, TargetComponent, SelectableComponent } from './components'
-import { RenderSystem, MovementSystem, TargetingSystem, MouseSelectionSystem } from './systems'
+import { RenderSystem, MovementSystem, TargetingSystem, MouseSelectionSystem, MouseTargetSystem } from './systems'
 
 export const createGame = (canvas) => {
 
@@ -27,6 +27,7 @@ export const createGame = (canvas) => {
   world.addSystem([PositionComponent, VelocityComponent], MovementSystem)
   world.addSystem([TargetComponent, PositionComponent, VelocityComponent], TargetingSystem)
   world.addSystem([SelectableComponent, PositionComponent, SpriteComponent], MouseSelectionSystem(canvas))
+  world.addSystem([SelectableComponent, TargetComponent], MouseTargetSystem(canvas))
 
   return world
 }
