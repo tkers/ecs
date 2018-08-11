@@ -1,6 +1,6 @@
 import { createWorld } from './ecs'
-import { SpriteComponent, PositionComponent, VelocityComponent, SelectableComponent } from './components'
-import { RenderSystem, MovementSystem, MouseSelectionSystem, MouseTargetSystem } from './systems'
+import { SpriteComponent, PositionComponent, VelocityComponent, SelectableComponent, WanderComponent } from './components'
+import { RenderSystem, MovementSystem, WanderSystem, MouseSelectionSystem, MouseTargetSystem } from './systems'
 
 export const createGame = (canvas) => {
 
@@ -10,6 +10,7 @@ export const createGame = (canvas) => {
     .addComponent(new PositionComponent(10, 10))
     .addComponent(new SpriteComponent(32, '#ff00ff'))
     .addComponent(new VelocityComponent(60, 45))
+    .addComponent(new WanderComponent(1.5, 1))
     .addComponent(new SelectableComponent())
 
   world.createEntity()
@@ -26,6 +27,7 @@ export const createGame = (canvas) => {
 
   world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300))
   world.addSystem([PositionComponent, VelocityComponent], MovementSystem)
+  world.addSystem([VelocityComponent, WanderComponent], WanderSystem)
   world.addSystem([SelectableComponent, PositionComponent, SpriteComponent], MouseSelectionSystem(canvas))
   world.addSystem([SelectableComponent, PositionComponent, VelocityComponent], MouseTargetSystem(canvas))
 

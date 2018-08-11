@@ -69,6 +69,21 @@ export const MouseSelectionSystem = (canvas) => {
   }
 }
 
+export const WanderSystem = (ents, dt) => ents
+  .filter(ent => !hasComponent(SelectableComponent)(ent) || !ent.components.SelectableComponent.isSelected)
+  .forEach(ent => {
+    ent.components.WanderComponent.timer -= dt
+    if (ent.components.WanderComponent.timer > 0)
+      return
+
+    ent.components.WanderComponent.timer =
+      ent.components.WanderComponent.interval -
+      ent.components.WanderComponent.variance +
+      Math.random() * 2 * ent.components.WanderComponent.variance
+
+    ent.components.VelocityComponent.direction = Math.random() * 360
+  })
+
 const wrapDir = d => (d + 360) % 360
 
 const turnToDir = (startDir, targetDir, maxSpeed = 180) => {

@@ -13,6 +13,12 @@ export function VelocityComponent(speed, direction) {
   this.direction = direction
 }
 
+export function WanderComponent(interval, variance) {
+  this.timer = 0
+  this.interval = interval
+  this.variance = variance
+}
+
 export function SelectableComponent(isSelected) {
   this.isSelected = isSelected
 }
