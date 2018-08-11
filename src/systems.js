@@ -20,11 +20,11 @@ export const RenderSystem = (canvas, w, h) => {
     }
 }
 
-export const MovementSystem = ents => ents
+export const MovementSystem = (ents, dt) => ents
   .forEach(ent => {
     const r = ent.components.VelocityComponent.direction * Math.PI / 180;
-    ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed
-    ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed
+    ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed * dt
+    ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed * dt
   })
 
 export const MouseSelectionSystem = (canvas) => {
@@ -92,7 +92,7 @@ export const MouseTargetSystem = (canvas) => {
     mouseY = e.pageY - e.target.offsetTop
   })
 
-  return ents => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+  return (ents, dt) => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
     const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
     const targetDir = getTargetDir(
       ent.components.PositionComponent.x,
@@ -100,6 +100,6 @@ export const MouseTargetSystem = (canvas) => {
       mouseX - offset,
       mouseY - offset
     )
-    ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 6)
+    ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 360 * dt)
   })
 };

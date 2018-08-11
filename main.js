@@ -2,10 +2,13 @@
 window.addEventListener('load', () => {
   const game = ECS.createGame(document.getElementById('cvs'))
 
-  const gameLoop = () => {
-    game.update()
+  let pt = 0
+  const gameLoop = (t) => {
+    const dt = (t - pt) / 1000
+    pt = t
+    game.update(dt)
     requestAnimationFrame(gameLoop)
   }
 
-  gameLoop()
+  gameLoop(0)
 })

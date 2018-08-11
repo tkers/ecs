@@ -51,8 +51,8 @@ export const createWorld = () => {
     systems.push(newSys)
   }
 
-  const update = () => {
-    systems.forEach(sys => sys.fn(sys.entities))
+  const update = (ctx) => {
+    systems.forEach(sys => sys.fn(sys.entities, ctx))
   }
 
   return {
