@@ -1,5 +1,5 @@
 import { hasComponent } from './ecs'
-import { TargetComponent, SelectableComponent, SpriteComponent } from './components'
+import { SelectableComponent, SpriteComponent } from './components'
 
 export const RenderSystem = (canvas, w, h) => {
   const ctx = canvas.getContext('2d')
@@ -25,20 +25,6 @@ export const MovementSystem = ents => ents
     const r = ent.components.VelocityComponent.direction * Math.PI / 180;
     ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed
     ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed
-  })
-
-const wrapDir = d => (d + 360) % 360;
-export const TargetingSystem = ents => ents
-  .forEach(ent => {
-    const dx = ent.components.TargetComponent.x - ent.components.PositionComponent.x
-    const dy = ent.components.TargetComponent.y - ent.components.PositionComponent.y
-    const direction = Math.atan2(dy, dx) * 180 / Math.PI
-
-    const turnDiff = ent.components.VelocityComponent.direction - direction
-    const turnDir = wrapDir(turnDiff) > 180 ? 1 : -1
-    const turnSpeed = Math.min(Math.abs(turnDiff), 6)
-
-    ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed)
   })
 
 export const MouseSelectionSystem = (canvas) => {
@@ -83,25 +69,39 @@ export const MouseSelectionSystem = (canvas) => {
   }
 }
 
+const wrapDir = d => (d + 360) % 360
+
+const turnToDir = (startDir, targetDir, maxSpeed = 180) => {
+  const targetDirDiff = startDir - targetDir
+  const turnDir = wrapDir(targetDirDiff) > 180 ? 1 : -1
+  const turnSpeed = Math.min(Math.abs(targetDirDiff), maxSpeed)
+  return wrapDir(startDir + turnDir * turnSpeed)
+}
+
+const getTargetDir = (startX, startY, targetX, targetY) => {
+  const dx = targetX - startX
+  const dy = targetY - startY
+  return Math.atan2(dy, dx) * 180 / Math.PI
+}
+
 export const MouseTargetSystem = (canvas) => {
   let mouseX = 0
   let mouseY = 0
-  let triggered = false
   canvas.addEventListener('mousemove', (e) => {
     mouseX = e.pageX - e.target.offsetLeft
     mouseY = e.pageY - e.target.offsetTop
-    triggered = true
   })
 
-  return ents => {
-    if (!triggered)
-      return
-    triggered = false
+  return ents => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+    const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
+    const dx = mouseX - offset - ent.components.PositionComponent.x
+    const dy = mouseY - offset - ent.components.PositionComponent.y
+    const targetDir = Math.atan2(dy, dx) * 180 / Math.PI
 
-    ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
-      const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
-      ent.components.TargetComponent.x = mouseX - offset
-      ent.components.TargetComponent.y = mouseY - offset
-    })
-  }
+    const targetDirDiff = ent.components.VelocityComponent.direction - targetDir
+    const turnDir = wrapDir(targetDirDiff) > 180 ? 1 : -1
+    const turnSpeed = Math.min(Math.abs(targetDirDiff), 6)
+
+    ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed)
+  })
 };

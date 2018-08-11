@@ -83,11 +83,6 @@
     this.direction = direction;
   }
 
-  function TargetComponent(tx, ty) {
-    this.x = tx;
-    this.y = ty;
-  }
-
   function SelectableComponent(isSelected) {
     this.isSelected = isSelected;
   }
@@ -116,20 +111,6 @@
       const r = ent.components.VelocityComponent.direction * Math.PI / 180;
       ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed;
       ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed;
-    });
-
-  const wrapDir = d => (d + 360) % 360;
-  const TargetingSystem = ents => ents
-    .forEach(ent => {
-      const dx = ent.components.TargetComponent.x - ent.components.PositionComponent.x;
-      const dy = ent.components.TargetComponent.y - ent.components.PositionComponent.y;
-      const direction = Math.atan2(dy, dx) * 180 / Math.PI;
-
-      const turnDiff = ent.components.VelocityComponent.direction - direction;
-      const turnDir = wrapDir(turnDiff) > 180 ? 1 : -1;
-      const turnSpeed = Math.min(Math.abs(turnDiff), 6);
-
-      ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed);
     });
 
   const MouseSelectionSystem = (canvas) => {
@@ -174,27 +155,27 @@
     }
   };
 
+  const wrapDir = d => (d + 360) % 360;
   const MouseTargetSystem = (canvas) => {
     let mouseX = 0;
     let mouseY = 0;
-    let triggered = false;
     canvas.addEventListener('mousemove', (e) => {
       mouseX = e.pageX - e.target.offsetLeft;
       mouseY = e.pageY - e.target.offsetTop;
-      triggered = true;
     });
 
-    return ents => {
-      if (!triggered)
-        return
-      triggered = false;
+    return ents => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+      const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0;
+      const dx = mouseX - offset - ent.components.PositionComponent.x;
+      const dy = mouseY - offset - ent.components.PositionComponent.y;
+      const targetDir = Math.atan2(dy, dx) * 180 / Math.PI;
 
-      ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
-        const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0;
-        ent.components.TargetComponent.x = mouseX - offset;
-        ent.components.TargetComponent.y = mouseY - offset;
-      });
-    }
+      const targetDirDiff = ent.components.VelocityComponent.direction - targetDir;
+      const turnDir = wrapDir(targetDirDiff) > 180 ? 1 : -1;
+      const turnSpeed = Math.min(Math.abs(targetDirDiff), 6);
+
+      ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed);
+    })
   };
 
   const createGame = (canvas) => {
@@ -205,28 +186,24 @@
       .addComponent(new PositionComponent(10, 10))
       .addComponent(new SpriteComponent(32, '#ff00ff'))
       .addComponent(new VelocityComponent(1, 45))
-      .addComponent(new TargetComponent(50, 250))
       .addComponent(new SelectableComponent());
 
     world.createEntity()
       .addComponent(new PositionComponent(250, 250))
       .addComponent(new SpriteComponent(59, '#00ffff'))
       .addComponent(new VelocityComponent(0.5, 200))
-      .addComponent(new TargetComponent(200, 100))
       .addComponent(new SelectableComponent());
 
     world.createEntity()
       .addComponent(new PositionComponent(280, 30))
       .addComponent(new SpriteComponent(16, '#00aaaa'))
       .addComponent(new VelocityComponent(1.5, 180))
-      .addComponent(new TargetComponent(150, 150))
       .addComponent(new SelectableComponent());
 
     world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
     world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
-    world.addSystem([TargetComponent, PositionComponent, VelocityComponent], TargetingSystem);
     world.addSystem([SelectableComponent, PositionComponent, SpriteComponent], MouseSelectionSystem(canvas));
-    world.addSystem([SelectableComponent, TargetComponent], MouseTargetSystem(canvas));
+    world.addSystem([SelectableComponent, PositionComponent, VelocityComponent], MouseTargetSystem(canvas));
 
     return world
   };

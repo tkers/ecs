@@ -13,11 +13,6 @@ export function VelocityComponent(speed, direction) {
   this.direction = direction
 }
 
-export function TargetComponent(tx, ty) {
-  this.x = tx
-  this.y = ty
-}
-
 export function SelectableComponent(isSelected) {
   this.isSelected = isSelected
 }
