@@ -1,5 +1,5 @@
 import { hasComponent } from './ecs'
-import { SelectableComponent, SpriteComponent } from './components'
+import { SelectableComponent } from './components'
 
 export const RenderSystem = (canvas, w, h) => {
   const ctx = canvas.getContext('2d')
@@ -11,10 +11,14 @@ export const RenderSystem = (canvas, w, h) => {
     ents
       .forEach(ent => {
         ctx.fillStyle = ent.components.SpriteComponent.color
-        ctx.fillRect(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, ent.components.SpriteComponent.size)
+        ctx.beginPath()
+        ctx.arc(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, 0, Math.PI * 2)
+        ctx.fill()
         if (hasComponent(SelectableComponent)(ent) && ent.components.SelectableComponent.isSelected) {
-          ctx.fillStyle = '#000000'
-          ctx.strokeRect(ent.components.PositionComponent.x - 5, ent.components.PositionComponent.y - 5, ent.components.SpriteComponent.size + 10, ent.components.SpriteComponent.size + 10)
+          ctx.strokeStyle = '#000000'
+          ctx.beginPath()
+          ctx.arc(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size + 5, 0, Math.PI * 2)
+          ctx.stroke()
         }
       })
     }
@@ -27,6 +31,7 @@ export const MovementSystem = (ents, dt) => ents
     ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed * dt
   })
 
+const getDist = (x1, y1, x2, y2) => Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 export const MouseSelectionSystem = (canvas) => {
   let clickX = 0
   let clickY = 0
@@ -48,12 +53,12 @@ export const MouseSelectionSystem = (canvas) => {
       return
 
     if (mode === 1) {
-      const clickedEnt = ents.find(ent => (
-        clickX >= ent.components.PositionComponent.x &&
-        clickY >= ent.components.PositionComponent.y &&
-        clickX <= ent.components.PositionComponent.x + ent.components.SpriteComponent.size &&
-        clickY <= ent.components.PositionComponent.y + ent.components.SpriteComponent.size
-      ))
+      const clickedEnt = ents.find(ent => getDist(
+        clickX,
+        clickY,
+        ent.components.PositionComponent.x,
+        ent.components.PositionComponent.y
+      ) <= ent.components.SpriteComponent.size)
 
       if (clickedEnt)
         clickedEnt.components.SelectableComponent.isSelected = true
@@ -108,12 +113,11 @@ export const MouseTargetSystem = (canvas) => {
   })
 
   return (ents, dt) => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
-    const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
     const targetDir = getTargetDir(
       ent.components.PositionComponent.x,
       ent.components.PositionComponent.y,
-      mouseX - offset,
-      mouseY - offset
+      mouseX,
+      mouseY
     )
     ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 360 * dt)
   })
