@@ -78,15 +78,14 @@
     this.y = y;
   }
 
-  function VelocityComponent(vx, vy) {
-    this.vx = vx;
-    this.vy = vy;
+  function VelocityComponent(speed, direction) {
+    this.speed = speed;
+    this.direction = direction;
   }
 
-  function TargetComponent(tx, ty, velocity) {
+  function TargetComponent(tx, ty) {
     this.x = tx;
     this.y = ty;
-    this.v = velocity;
   }
 
   function SelectableComponent(isSelected) {
@@ -114,35 +113,74 @@
 
   const MovementSystem = ents => ents
     .forEach(ent => {
-      ent.components.PositionComponent.x += ent.components.VelocityComponent.vx;
-      ent.components.PositionComponent.y += ent.components.VelocityComponent.vy;
+      const r = ent.components.VelocityComponent.direction * Math.PI / 180;
+      ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed;
+      ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed;
     });
 
+  const wrapDir = d => (d + 360) % 360;
   const TargetingSystem = ents => ents
     .forEach(ent => {
-      const xi = ent.components.PositionComponent.x;
-      const yi = ent.components.PositionComponent.y;
-      const xt = ent.components.TargetComponent.x;
-      const yt = ent.components.TargetComponent.y;
-      const dx = xt - xi;
-      const dy = yt - yi;
-      const angle = Math.atan2(dy, dx);
-      ent.components.VelocityComponent.vx = Math.cos(angle) * ent.components.TargetComponent.v;
-      ent.components.VelocityComponent.vy = Math.sin(angle) * ent.components.TargetComponent.v;
-      if (Math.sqrt(dx ** 2 + dy ** 2) < ent.components.TargetComponent.v) {
-        ent.components.VelocityComponent.vx = 0;
-        ent.components.VelocityComponent.vy = 0;
-        ent.removeComponent(TargetComponent);
-      }
+      const dx = ent.components.TargetComponent.x - ent.components.PositionComponent.x;
+      const dy = ent.components.TargetComponent.y - ent.components.PositionComponent.y;
+      const direction = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      const turnDiff = ent.components.VelocityComponent.direction - direction;
+      const turnDir = wrapDir(turnDiff) > 180 ? 1 : -1;
+      const turnSpeed = Math.min(Math.abs(turnDiff), 6);
+
+      ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed);
     });
 
   const MouseSelectionSystem = (canvas) => {
     let clickX = 0;
     let clickY = 0;
-    let triggered = false;
+    let mode = 0;
     canvas.addEventListener('mousedown', (e) => {
       clickX = e.pageX - e.target.offsetLeft;
       clickY = e.pageY - e.target.offsetTop;
+      mode = 1;
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      clickX = e.pageX - e.target.offsetLeft;
+      clickY = e.pageY - e.target.offsetTop;
+      mode = 2;
+    });
+
+    return ents => {
+      if (!mode)
+        return
+
+      if (mode === 1) {
+        const clickedEnt = ents.find(ent => (
+          clickX >= ent.components.PositionComponent.x &&
+          clickY >= ent.components.PositionComponent.y &&
+          clickX <= ent.components.PositionComponent.x + ent.components.SpriteComponent.size &&
+          clickY <= ent.components.PositionComponent.y + ent.components.SpriteComponent.size
+        ));
+
+        if (clickedEnt)
+          clickedEnt.components.SelectableComponent.isSelected = true;
+      }
+
+      if (mode === 2) {
+        ents.forEach(ent => {
+          ent.components.SelectableComponent.isSelected = false;
+        });
+      }
+
+      mode = 0;
+    }
+  };
+
+  const MouseTargetSystem = (canvas) => {
+    let mouseX = 0;
+    let mouseY = 0;
+    let triggered = false;
+    canvas.addEventListener('mousemove', (e) => {
+      mouseX = e.pageX - e.target.offsetLeft;
+      mouseY = e.pageY - e.target.offsetTop;
       triggered = true;
     });
 
@@ -150,17 +188,11 @@
       if (!triggered)
         return
       triggered = false;
-      ents.forEach(ent => {
-        ent.components.SelectableComponent.isSelected = false;
-        if (
-          clickX >= ent.components.PositionComponent.x &&
-          clickY >= ent.components.PositionComponent.y &&
-          clickX <= ent.components.PositionComponent.x + ent.components.SpriteComponent.size &&
-          clickY <= ent.components.PositionComponent.y + ent.components.SpriteComponent.size
-        ) {
-          ent.components.SelectableComponent.isSelected = true;
-          return
-        }
+
+      ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+        const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0;
+        ent.components.TargetComponent.x = mouseX - offset;
+        ent.components.TargetComponent.y = mouseY - offset;
       });
     }
   };
@@ -172,24 +204,29 @@
     world.createEntity()
       .addComponent(new PositionComponent(10, 10))
       .addComponent(new SpriteComponent(32, '#ff00ff'))
-      .addComponent(new VelocityComponent(1, 2));
+      .addComponent(new VelocityComponent(1, 45))
+      .addComponent(new TargetComponent(50, 250))
+      .addComponent(new SelectableComponent());
 
     world.createEntity()
       .addComponent(new PositionComponent(250, 250))
-      .addComponent(new SpriteComponent(32, '#00ffff'))
-      .addComponent(new VelocityComponent(-0.5, -3));
+      .addComponent(new SpriteComponent(59, '#00ffff'))
+      .addComponent(new VelocityComponent(0.5, 200))
+      .addComponent(new TargetComponent(200, 100))
+      .addComponent(new SelectableComponent());
 
     world.createEntity()
       .addComponent(new PositionComponent(280, 30))
       .addComponent(new SpriteComponent(16, '#00aaaa'))
-      .addComponent(new VelocityComponent(0, 0))
-      .addComponent(new TargetComponent(150, 150, 1))
+      .addComponent(new VelocityComponent(1.5, 180))
+      .addComponent(new TargetComponent(150, 150))
       .addComponent(new SelectableComponent());
 
     world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
     world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
     world.addSystem([TargetComponent, PositionComponent, VelocityComponent], TargetingSystem);
     world.addSystem([SelectableComponent, PositionComponent, SpriteComponent], MouseSelectionSystem(canvas));
+    world.addSystem([SelectableComponent, TargetComponent], MouseTargetSystem(canvas));
 
     return world
   };

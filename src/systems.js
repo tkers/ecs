@@ -1,5 +1,5 @@
 import { hasComponent } from './ecs'
-import { TargetComponent, SelectableComponent } from './components'
+import { TargetComponent, SelectableComponent, SpriteComponent } from './components'
 
 export const RenderSystem = (canvas, w, h) => {
   const ctx = canvas.getContext('2d')
@@ -22,26 +22,23 @@ export const RenderSystem = (canvas, w, h) => {
 
 export const MovementSystem = ents => ents
   .forEach(ent => {
-    ent.components.PositionComponent.x += ent.components.VelocityComponent.vx
-    ent.components.PositionComponent.y += ent.components.VelocityComponent.vy
+    const r = ent.components.VelocityComponent.direction * Math.PI / 180;
+    ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed
+    ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed
   })
 
+const wrapDir = d => (d + 360) % 360;
 export const TargetingSystem = ents => ents
   .forEach(ent => {
-    const xi = ent.components.PositionComponent.x
-    const yi = ent.components.PositionComponent.y
-    const xt = ent.components.TargetComponent.x
-    const yt = ent.components.TargetComponent.y
-    const dx = xt - xi
-    const dy = yt - yi
-    const angle = Math.atan2(dy, dx)
-    ent.components.VelocityComponent.vx = Math.cos(angle) * ent.components.TargetComponent.v
-    ent.components.VelocityComponent.vy = Math.sin(angle) * ent.components.TargetComponent.v
-    if (Math.sqrt(dx ** 2 + dy ** 2) < ent.components.TargetComponent.v) {
-      ent.components.VelocityComponent.vx = 0
-      ent.components.VelocityComponent.vy = 0
-      ent.removeComponent(TargetComponent)
-    }
+    const dx = ent.components.TargetComponent.x - ent.components.PositionComponent.x
+    const dy = ent.components.TargetComponent.y - ent.components.PositionComponent.y
+    const direction = Math.atan2(dy, dx) * 180 / Math.PI
+
+    const turnDiff = ent.components.VelocityComponent.direction - direction
+    const turnDir = wrapDir(turnDiff) > 180 ? 1 : -1
+    const turnSpeed = Math.min(Math.abs(turnDiff), 6)
+
+    ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed)
   })
 
 export const MouseSelectionSystem = (canvas) => {

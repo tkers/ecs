@@ -8,15 +8,14 @@ export function PositionComponent(x, y) {
   this.y = y
 }
 
-export function VelocityComponent(vx, vy) {
-  this.vx = vx
-  this.vy = vy
+export function VelocityComponent(speed, direction) {
+  this.speed = speed
+  this.direction = direction
 }
 
-export function TargetComponent(tx, ty, velocity) {
+export function TargetComponent(tx, ty) {
   this.x = tx
   this.y = ty
-  this.v = velocity
 }
 
 export function SelectableComponent(isSelected) {
