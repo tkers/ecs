@@ -94,14 +94,12 @@ export const MouseTargetSystem = (canvas) => {
 
   return ents => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
     const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0
-    const dx = mouseX - offset - ent.components.PositionComponent.x
-    const dy = mouseY - offset - ent.components.PositionComponent.y
-    const targetDir = Math.atan2(dy, dx) * 180 / Math.PI
-
-    const targetDirDiff = ent.components.VelocityComponent.direction - targetDir
-    const turnDir = wrapDir(targetDirDiff) > 180 ? 1 : -1
-    const turnSpeed = Math.min(Math.abs(targetDirDiff), 6)
-
-    ent.components.VelocityComponent.direction = wrapDir(ent.components.VelocityComponent.direction + turnDir * turnSpeed)
+    const targetDir = getTargetDir(
+      ent.components.PositionComponent.x,
+      ent.components.PositionComponent.y,
+      mouseX - offset,
+      mouseY - offset
+    )
+    ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 6)
   })
 };
