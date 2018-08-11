@@ -100,20 +100,26 @@
 
     return ents => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       ents
         .forEach(ent => {
           ctx.fillStyle = ent.components.SpriteComponent.color;
           ctx.beginPath();
           ctx.arc(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size, 0, Math.PI * 2);
           ctx.fill();
-          if (hasComponent(SelectableComponent)(ent) && ent.components.SelectableComponent.isSelected) {
-            ctx.strokeStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size + 5, 0, Math.PI * 2);
-            ctx.stroke();
-          }
         });
-      }
+
+      ents
+        .filter(ent => hasComponent(SelectableComponent)(ent) && ent.components.SelectableComponent.isSelected)
+        .forEach(ent => {
+          ctx.strokeStyle = '#000000';
+          ctx.beginPath();
+          ctx.arc(ent.components.PositionComponent.x, ent.components.PositionComponent.y, ent.components.SpriteComponent.size + 5, 0, Math.PI * 2);
+          ctx.setLineDash([10, 5]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        });
+    }
   };
 
   const MovementSystem = (ents, dt) => ents
