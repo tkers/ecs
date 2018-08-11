@@ -57,8 +57,8 @@
       systems.push(newSys);
     };
 
-    const update = () => {
-      systems.forEach(sys => sys.fn(sys.entities));
+    const update = (ctx) => {
+      systems.forEach(sys => sys.fn(sys.entities, ctx));
     };
 
     return {
@@ -81,6 +81,12 @@
   function VelocityComponent(speed, direction) {
     this.speed = speed;
     this.direction = direction;
+  }
+
+  function WanderComponent(interval, variance) {
+    this.timer = 0;
+    this.interval = interval;
+    this.variance = variance;
   }
 
   function SelectableComponent(isSelected) {
@@ -106,11 +112,11 @@
       }
   };
 
-  const MovementSystem = ents => ents
+  const MovementSystem = (ents, dt) => ents
     .forEach(ent => {
       const r = ent.components.VelocityComponent.direction * Math.PI / 180;
-      ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed;
-      ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed;
+      ent.components.PositionComponent.x += Math.cos(r) * ent.components.VelocityComponent.speed * dt;
+      ent.components.PositionComponent.y += Math.sin(r) * ent.components.VelocityComponent.speed * dt;
     });
 
   const MouseSelectionSystem = (canvas) => {
@@ -155,6 +161,21 @@
     }
   };
 
+  const WanderSystem = (ents, dt) => ents
+    .filter(ent => !hasComponent(SelectableComponent)(ent) || !ent.components.SelectableComponent.isSelected)
+    .forEach(ent => {
+      ent.components.WanderComponent.timer -= dt;
+      if (ent.components.WanderComponent.timer > 0)
+        return
+
+      ent.components.WanderComponent.timer =
+        ent.components.WanderComponent.interval -
+        ent.components.WanderComponent.variance +
+        Math.random() * 2 * ent.components.WanderComponent.variance;
+
+      ent.components.VelocityComponent.direction = Math.random() * 360;
+    });
+
   const wrapDir = d => (d + 360) % 360;
 
   const turnToDir = (startDir, targetDir, maxSpeed = 180) => {
@@ -178,7 +199,7 @@
       mouseY = e.pageY - e.target.offsetTop;
     });
 
-    return ents => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
+    return (ents, dt) => ents.filter(ent => ent.components.SelectableComponent.isSelected).forEach(ent => {
       const offset = hasComponent(SpriteComponent)(ent) ? ent.components.SpriteComponent.size / 2 : 0;
       const targetDir = getTargetDir(
         ent.components.PositionComponent.x,
@@ -186,7 +207,7 @@
         mouseX - offset,
         mouseY - offset
       );
-      ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 6);
+      ent.components.VelocityComponent.direction = turnToDir(ent.components.VelocityComponent.direction, targetDir, 360 * dt);
     })
   };
 
@@ -195,25 +216,27 @@
     const world = createWorld();
 
     world.createEntity()
-      .addComponent(new PositionComponent(10, 10))
+      .addComponent(new PositionComponent(610, 610))
       .addComponent(new SpriteComponent(32, '#ff00ff'))
-      .addComponent(new VelocityComponent(1, 45))
+      .addComponent(new VelocityComponent(60, 45))
+      .addComponent(new WanderComponent(1.5, 1))
       .addComponent(new SelectableComponent());
 
     world.createEntity()
-      .addComponent(new PositionComponent(250, 250))
+      .addComponent(new PositionComponent(850, 250))
       .addComponent(new SpriteComponent(59, '#00ffff'))
-      .addComponent(new VelocityComponent(0.5, 200))
+      .addComponent(new VelocityComponent(30, 200))
       .addComponent(new SelectableComponent());
 
     world.createEntity()
-      .addComponent(new PositionComponent(280, 30))
+      .addComponent(new PositionComponent(380, 130))
       .addComponent(new SpriteComponent(16, '#00aaaa'))
-      .addComponent(new VelocityComponent(1.5, 180))
+      .addComponent(new VelocityComponent(90, 180))
       .addComponent(new SelectableComponent());
 
-    world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 400, 300));
+    world.addSystem([SpriteComponent, PositionComponent], RenderSystem(canvas, 1200, 800));
     world.addSystem([PositionComponent, VelocityComponent], MovementSystem);
+    world.addSystem([VelocityComponent, WanderComponent], WanderSystem);
     world.addSystem([SelectableComponent, PositionComponent, SpriteComponent], MouseSelectionSystem(canvas));
     world.addSystem([SelectableComponent, PositionComponent, VelocityComponent], MouseTargetSystem(canvas));
 
